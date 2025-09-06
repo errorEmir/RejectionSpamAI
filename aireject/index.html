@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><!DOCTYPE html>
+        <html lang="tr">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Gmail Entegreli Ret Mesajı Filtreleme</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📧 Gmail Entegreli Ret Mesajı Filtreleme</h1>
+        <p>Gmail hesabınızdaki iş ret mesajlarını otomatik olarak tespit edin ve yönetin</p>
+    </div>
+
+    <div class="main-content">
+        <!-- Gmail Kimlik Doğrulama -->
+        <div class="section auth-section">
+            <h2>🔐 Gmail Bağlantısı</h2>
+
+            <div id="authStatus" class="auth-status disconnected">
+                <div>🔴 Gmail hesabına bağlı değil</div>
+                <small>E-postalarınızı analiz etmek için Gmail hesabınıza bağlanın</small>
+            </div>
+
+            <button id="authorizeBtn" class="btn btn-success" onclick="handleAuthClick()">
+                Gmail'e Bağlan
+            </button>
+
+            <button id="signoutBtn" class="btn btn-danger" onclick="handleSignoutClick()" style="display: none;">
+                Bağlantıyı Kes
+            </button>
+
+            <div style="margin-top: 20px; padding: 15px; background: rgba(66, 133, 244, 0.1); border-radius: 10px; text-align: left;">
+                <h4>🛡️ Güvenlik ve Gizlilik:</h4>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Sadece e-posta başlıklarını ve içeriklerini okuma izni</li>
+                    <li>E-postalar tarayıcıda işlenir, hiçbir sunucuya gönderilmez</li>
+                    <li>Gmail API resmi güvenlik protokollerini kullanır</li>
+                    <li>İstediğiniz zaman bağlantıyı kesebilirsiniz</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Filtre Ayarları -->
+        <div class="section">
+            <h2>⚙️ Filtre Ayarları</h2>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Analiz Edilecek E-posta Sayısı</label>
+                    <label for="emailCount"></label><select id="emailCount">
+                        <option value="10">Son 10 e-posta</option>
+                        <option value="25" selected>Son 25 e-posta</option>
+                        <option value="50">Son 50 e-posta</option>
+                        <option value="100">Son 100 e-posta</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Minimum Güven Skoru (%)</label>
+                    <label for="confidenceThreshold"></label><input type="number" id="confidenceThreshold" value="70" min="50" max="100">
+                </div>
+
+                <div class="control-group">
+                    <label>Otomatik İşlem</label>
+                    <label for="autoAction"></label><select id="autoAction">
+                        <option value="none" selected>Sadece Tespit Et</option>
+                        <option value="label">Etiket Ekle</option>
+                        <option value="archive">Arşivle</option>
+                        <option value="delete">Çöp Kutusuna Taşı</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Arama Sorgusu (Gmail tarzı)</label>
+                    <label for="searchQuery"></label><input type="text" id="searchQuery" placeholder="from:hr OR subject:başvuru" value="subject:(başvuru OR application OR iş)">
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <button id="scanBtn" class="btn" onclick="scanEmails()" disabled>
+                    <span id="scanBtnText">E-postaları Tara</span>
+                    <span id="scanLoader" class="loading" style="display: none;"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- E-posta Listesi -->
+        <div class="section">
+            <h2>📬 Analiz Sonuçları</h2>
+
+            <div style="margin-bottom: 15px;">
+                <div id="scanProgress" class="progress-bar" style="display: none;">
+                    <div id="scanProgressFill" class="progress-fill" style="width: 0"></div>
+                </div>
+                <div id="scanStatus" style="text-align: center; color: #7f8c8d;"></div>
+            </div>
+
+            <div id="emailList" class="email-list">
+                <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                    <h3>📭 Henüz analiz yapılmadı</h3>
+                    <p>Gmail hesabınıza bağlanın ve e-postalarınızı tarayın</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- İstatistikler -->
+        <div class="section">
+            <h2>📊 Tarama İstatistikleri</h2>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalEmails">0</div>
+                    <div class="stat-label">Taranan E-posta</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="rejectionEmails">0</div>
+                    <div class="stat-label">Tespit Edilen Ret</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="averageConfidence">0%</div>
+                    <div class="stat-label">Ortalama Güven</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="lastScan">-</div>
+                    <div class="stat-label">Son Tarama</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gmail API -->
+<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+<script src="script.js"></script>
+</body>
+</html>
